@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CROSSY ROAD</title>
+    <style>
+        canvas {
+            background-color: black;
+        }
+
+        body {
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <canvas width="700" height="500" id="myCanvas"></canvas>
+    <img id="Carlitos" src="nemo.png" alt="" style="display: none;">
+
+    <script>
+        var canvas = document.getElementById('myCanvas');
+        var ctx = canvas.getContext('2d');
+        var x = 350, y = 350, dir = 0, speed = 3;
+        let pause = false;
+        let gameOver = false;
+
+        class rectangulo {
+            constructor(x, y, w, h, c) {
+                this.x = x;
+                this.y = y;
+                this.w = w;
+                this.h = h;
+                this.c = c;
+            }
+            paint(ctx) {
+                ctx.fillStyle = this.c;
+                ctx.fillRect(this.x, this.y, this.w, this.h);
+                ctx.strokeRect(this.x, this.y, this.w, this.h);
+            }
+        }
+
+        const player = new rectangulo(325, 450, 50, 50, "black");
+
+        class Enemy {
+            constructor(width, height, color, speed) {
+                this.width = width;
+                this.height = height;
+                this.color = color;
+                this.speed = speed;
+                this.direction = 1; 
+                this.resetPosition();
+            }
+
+            resetPosition() {
+                this.x = -this.width;
+                this.y = Math.floor(Math.random() * (canvas.height * 0.8)); 
+            }
+
+            move() {
+                this.x += this.direction * this.speed;
+                if (this.x > canvas.width) {
+                    this.resetPosition();
+                }
+            }
+
+            paint(ctx) {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+        }
+        const enemies = [];
+        for (let i = 0; i < 7; i++) {
+            const enemy = new Enemy(30, 30, "red", 3);
+            enemies.push(enemy);
+        }
+
+        window.requestAnimationFrame = (function () {
+            return window.requestAnimationFrame ||
+                window.webkitRequestAnimationFrame ||
+                window.mozRequestAnimationFrame ||
+                function (callback) {
+                    window.setTimeout(callback, 17);
+                };
+        }());
+
+        document.addEventListener("keydown", (e) => {
+            switch (e.keyCode) {
+                case 87:
+                    dir = 1;
+                    pause = false;
+                    break;
+                case 83:
+                    dir = 2;
+                    pause = false;
+                    break;
+                case 68:
+                    dir = 3;
+                    pause = false;
+                    break;
+                case 65:
+                    dir = 4;
+                    pause = false;
+                    break;
+                case 32:
+                    speed += 10;
+                    break;
+                case 80:
+                    pause = !pause;
+                    break;
+                case 82:
+                    if (gameOver) {
+                        restartGame();
+                    }
+                    break;
+            }
+        });
+
+
+        function restartGame() {
+            player.x = 325;
+            player.y = 450;
+            gameOver = false;
+            pause = false;
+            for (const enemy of enemies) {
+                enemy.resetPosition();
+            }
+        }
+
+        function update() {
+            if (!pause && !gameOver) {
+                if (dir == 1 && player.y - speed >= 0) {
+                    player.y -= speed;
+                }
+                if (dir == 2 && player.y + speed + player.h <= canvas.height) {
+                    player.y += speed;
+                }
+                if (dir == 3 && player.x + speed + player.w <= canvas.width) {
+                    player.x += speed;
+                }
+                if (dir == 4 && player.x - speed >= 0) {
+                    player.x -= speed;
+                }
+
+                for (const enemy of enemies) {
+                    enemy.move();
+                }
+
+                for (const enemy of enemies) {
+                if (
+                    player.x < enemy.x + enemy.width &&
+                    player.x + player.w > enemy.x &&
+                    player.y < enemy.y + enemy.height &&
+                    player.y + player.h > enemy.y
+                ) {
+        
+                    gameOver = true;
+                    pause = true;
+                }
+            }
+                paint();
+            }
+            window.requestAnimationFrame(update);
+        }
+
+        function paint() {
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(Carlitos, player.x, player.y, 50, 50);
+
+            for (const enemy of enemies) {
+                enemy.paint(ctx);
+            }
+
+            if (gameOver) {
+                ctx.fillStyle = "red";
+                ctx.font = "40px Arial";
+                ctx.fillText("Game Over", canvas.width / 2 - 100, canvas.height / 2);
+                ctx.font = "20px Arial";
+                ctx.fillText("Presiona 'R' para reiniciar", canvas.width / 2 - 120, canvas.height / 2 + 40);
+            }
+        }
+
+        update();
+    </script>
+</body>
+</html>
