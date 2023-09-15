@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CROSSY ROAD</title>
+    <style>
+        body {
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #myCanvas {
+            border: 2px solid black;
+        }
+    </style>
+</head>
+<body>
+    <audio id="MusicFondo" src="MusicFondo.mp3" loop autoplay volume="0.2"></audio>
+    <audio id="Coin" src="coin.mp3"></audio>
+    <canvas width="700" height="500" id="myCanvas"></canvas>
+    <div id="instructions" style="text-align: center;">
+        <h2>Instrucciones:</h2>
+        <p>Usa las teclas W, A, S y D para moverte.</p>
+        <p>Consiga la mayor puntacion recolectando Estrellas de Mar</p>
+        <p>Presiona la tecla P para pausar o reanudar el juego.</p>
+        <p>Presiona la tecla R para reiniciar el juego al perder.</p>
+        
+    </div>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+       let dir = 0, speed = 4;
+        let pause = false;
+        let gameOver = false;
+        let lastEnemySpawnTime = 0;
+        let spawnInterval = 9000;
+        let level = 1;
+        let enemySpeed = 3;
+        let score = 0;
+        let requiredScore = 10;
+        let bonusRect = null;
+        const enemyImage = new Image();
+        enemyImage.src = "tiburon.png";
+        const bonusImage = new Image();
+        bonusImage.src = "bonus.png";
+        const MusicFondo = document.getElementById('MusicFondo');
+        const coin = document.getElementById('Coin');
+        let tiempo = 0;
+        class Rectangulo {
+            constructor(x, y, w, h) {
+                this.x = x;
+                this.y = y;
+                this.w = w;
+                this.h = h;
+            }
+            paint(ctx) {
+                ctx.fillStyle = "black";
+                ctx.fillRect(this.x, this.y, this.w, this.h);
+                ctx.strokeRect(this.x, this.y, this.w, this.h);
+            }
+        }
+
+        const player = new Rectangulo(325, 450, 50, 50);
+
+        class Enemy {
+            constructor(width, height, speed) {
+                this.width = width;
+                this.height = height;
+                this.speed = speed;
+                this.direction = 1;
+                this.resetPosition();
+            }
+
+            resetPosition() {
+                this.x = -this.width;
+                this.y = Math.floor(Math.random() * (canvas.height * 0.8));
+            }
+
+            move() {
+                this.x += this.direction * this.speed;
+                if (this.x > canvas.width) {
+                    this.resetPosition();
+                }
+            }
+
+            paint(ctx) {
+                ctx.drawImage(enemyImage, this.x, this.y, this.width, this.height);
+            }
+        }
+
+        const enemies = [new Enemy(60, 50, enemySpeed)];
+
+        const Carlitos = new Image();
+        Carlitos.src = "nemo.png";
+        const fondo = new Image();
+        fondo.src = "fondo.jpg";
+
+        let isPaused = false;
+
+        function GameOver() {
+            ctx.fillStyle = "red";
+            ctx.font = "40px Arial";
+            ctx.fillText("Game Over", canvas.width / 2 - 100, canvas.height / 2);
+            ctx.font = "20px Arial";
+            ctx.fillText("Presiona 'R' para reiniciar", canvas.width / 2 - 120, canvas.height / 2 + 40);
+        }
+
+        function Pause() {
+            ctx.fillStyle = "red";
+            ctx.font = "40px Arial";
+            ctx.fillText("Pause", canvas.width / 2 - 100, canvas.height / 2);
+            ctx.font = "20px Arial";
+            ctx.fillText("Presiona 'P' para continuar", canvas.width / 2 - 120, canvas.height / 2 + 40);
+        
+        }
+
+       
+
+
+        document.addEventListener("keydown", (e) => {
+            switch (e.keyCode) {
+                case 87:
+                    dir = 1; pause = false;
+                    break;
+                case 83:
+                    dir = 2; pause = false;
+                    break;
+                case 68:
+                    dir = 3; pause = false;
+                    break;
+                case 65:
+                    dir = 4; pause = false;
+                    break;
+                case 80:
+                    isPaused = !isPaused;
+                    break;
+                case 82:
+                    if (gameOver)
+                        restartGameOver();
+                    break;
+            }
+        });
+
+        function nextLevel() {
+            level++;
+            enemySpeed += 1;
+            speed+=1;
+            requiredScore += 10;
+            restartGameLevel();
+        }
+
+        function restartGameOver() {
+            player.x = 325;
+            player.y = 450;
+            gameOver = false;
+            pause = false;
+            score=0;
+            level=1;
+            enemySpeed=3;
+            requiredScore=10;
+            speed=4;
+            tiempo=0;
+            enemies.length = 0;
+            for (let i = 0; i < level; i++) {
+                const enemy = new Enemy(60, 50, enemySpeed);
+                enemies.push(enemy);
+            }
+        }
+
+        function restartGameLevel() {
+            player.x = 325;
+            player.y = 450;
+            gameOver = false;
+            pause = false;
+            
+            enemies.length = 0;
+            for (let i = 0; i < level; i++) {
+                const enemy = new Enemy(60, 50, enemySpeed);
+                enemies.push(enemy);
+            }
+        }
+
+        function update() {
+            if (!isPaused && !gameOver) {
+                if (dir == 1 && player.y - speed >= 0)
+                 player.y -= speed;
+                if (dir == 2 && player.y + speed + player.h <= canvas.height)
+                 player.y += speed;
+                if (dir == 3 && player.x + speed + player.w <= canvas.width)
+                 player.x += speed;
+                if (dir == 4 && player.x - speed >= 0)
+                 player.x -= speed;
+
+                for (const enemy of enemies) 
+                enemy.move();
+
+                for (const enemy of enemies) {
+                        if (player.x < enemy.x + enemy.width && player.x + player.w > enemy.x &&
+                        player.y < enemy.y + enemy.height && player.y + player.h > enemy.y) {
+                        gameOver = true;
+                        pause = true;
+                      
+                    }
+                }
+                if (score >= requiredScore) {
+            nextLevel();
+        }
+
+                const currentTime = Date.now();
+                if (currentTime - lastEnemySpawnTime > spawnInterval) {
+                    const enemy = new Enemy(60, 50, enemySpeed);
+                    enemy.y = Math.floor(Math.random() * (canvas.height - enemy.height));
+                    enemies.push(enemy);
+                    lastEnemySpawnTime = currentTime;
+                }
+
+                if (bonusRect !== null) {
+                    if (player.x < bonusRect.x + bonusRect.w && player.x + player.w > bonusRect.x &&
+                        player.y < bonusRect.y + bonusRect.h && player.y + player.h > bonusRect.y) {
+                        score += 1;
+                        bonusRect = null;
+                        coin.play();
+                        
+                    }
+                }
+
+                if (bonusRect === null && Math.random() ) {
+                    bonusRect = new Rectangulo(Math.random() * canvas.width, Math.random() * canvas.height, 30, 30);
+                }
+            }
+
+            paint();
+
+            if (gameOver) {
+                GameOver();
+            }
+
+            if (isPaused) {
+                Pause();
+            }
+
+            window.requestAnimationFrame(update);
+        }
+
+        update();
+
+        function paint() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(fondo, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(Carlitos, player.x, player.y, 50, 50);
+
+            for (const enemy of enemies)
+                enemy.paint(ctx);
+
+            if (bonusRect !== null) {
+                ctx.drawImage(bonusImage, bonusRect.x, bonusRect.y, bonusRect.w, bonusRect.h);
+            }
+            MusicFondo.play();
+            let segundero = ctx
+            ctx.fillStyle = "black";
+            ctx.font = "20px Arial";
+            ctx.fillText("Nivel: " + level, 20, 30);
+            ctx.fillText("Puntaje: " + score, 20, 60);
+         
+            ctx.fillText("Tiempo: " + tiempo, canvas.width - 180, 30);
+        }
+        setInterval(() => {
+  tiempo++;
+}, 1000);
+paint();
+    </script>
+</body>
+</html>
